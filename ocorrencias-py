@@ -1,0 +1,397 @@
+lista_ocorrencias = [] #armazenar todas as ocorrências cadastradas.
+contador_chegada = 0 # Contador de chegada ->define a ordem de entrada na fila
+contador_id = 100
+
+#functions da FILA
+fila_dados  = []   # armazena as ocorrências na ordem de entrada
+fila_inicio = 0    # aponta para o próximo a ser atendido
+
+def fila_enqueue(ocorrencia):
+    fila_dados.append(ocorrencia)
+
+def fila_dequeue():
+    global fila_inicio
+    if fila_inicio >= len(fila_dados):
+        return None
+    item = fila_dados[fila_inicio]
+    fila_inicio += 1
+    return item
+
+def fila_vazia():
+    return fila_inicio >= len(fila_dados)
+
+
+#functions da pilha
+pilha_historico = [] #registrar histórico de ações
+
+def pilha_push(acao):
+    pilha_historico.append(acao)
+
+def pilha_pop():
+    if not pilha_historico:
+        return None
+    return pilha_historico.pop()
+
+def pilha_topo():
+    if not pilha_historico:
+        return None
+    return pilha_historico[-1]
+
+# arvore
+raizArvore = None
+
+class No:
+    def __init__(self, id, ocorrencia):
+        self.id = id
+        self.ocorrencia = ocorrencia
+        self.esquerda = None
+        self.direita = None
+
+
+def inserir(raiz, ocorrencia):
+
+    if raiz is None:
+        return No(ocorrencia["id"], ocorrencia)
+
+    if ocorrencia["id"] < raiz.id:
+        raiz.esquerda = inserir(raiz.esquerda, ocorrencia)
+
+    elif ocorrencia["id"] > raiz.id:
+        raiz.direita = inserir(raiz.direita, ocorrencia)
+
+    return raiz
+
+
+def buscar_id(raiz, id_oc):
+    if raiz is None:
+        return None
+
+    if id_oc == raiz.id:
+        return raiz.ocorrencia
+
+    elif id_oc < raiz.id:
+        return buscar_id(raiz.esquerda, id_oc)
+
+    else:
+        return buscar_id(raiz.direita, id_oc)
+
+
+def printa_arvore(raiz):
+
+    if raiz is not None:
+        printa_arvore(raiz.esquerda)
+        print(raiz.id)
+        printa_arvore(raiz.direita)
+
+#HASH TABLE
+hash_por_nome = {}   # chave: nome em minúsculo
+hash_por_tipo = {}   # chave: tipo em minúsculo
+
+#Busca rápida por nome do solicitante ou tipo
+#Colisão -> resolvida por encadeamento
+def hash_inserir(ocorrencia):
+    chave_nome = ocorrencia["nome"].lower()
+    chave_tipo = ocorrencia["tipo"].lower()
+
+    # encadeamento: se a chave já existe, apenas adiciona à lista
+    if chave_nome not in hash_por_nome:
+        hash_por_nome[chave_nome] = []
+    hash_por_nome[chave_nome].append(ocorrencia)
+
+    if chave_tipo not in hash_por_tipo:
+        hash_por_tipo[chave_tipo] = []
+    hash_por_tipo[chave_tipo].append(ocorrencia)
+
+def hash_buscar_nome(nome):
+    return hash_por_nome.get(nome.lower(), [])
+
+def hash_buscar_tipo(tipo):
+    return hash_por_tipo.get(tipo.lower(), [])
+
+#FAZER A DEF DA BUSCA  BUBBLESORT???
+def ordenacao(lista, campo):
+    """
+    Ordena uma cópia da lista pelo campo informado.
+    campo pode ser: "id", "prioridade" ou "nome"
+    """
+    nova_lista = lista.copy()
+    quicksort(nova_lista, 0, len(nova_lista) - 1, campo)
+    return nova_lista
+
+def ordenacao(lista, campo):
+    nova_lista = lista.copy()
+    quicksort(nova_lista, 0, len(nova_lista)-1, campo)
+    return nova_lista
+
+
+def quicksort(lista, inicio, fim, campo):
+
+    if inicio < fim:
+
+        pivo = particionar(lista, inicio, fim, campo)
+
+        quicksort(lista, inicio, pivo-1, campo)
+
+        quicksort(lista, pivo+1, fim, campo)
+
+
+def particionar(lista, inicio, fim, campo):
+
+    pivo = lista[fim]
+
+    i = inicio - 1
+
+    for j in range(inicio, fim):
+
+        if lista[j][campo] >= pivo[campo]:
+
+            i += 1
+            lista[i], lista[j] = lista[j], lista[i]
+
+    lista[i+1], lista[fim] = lista[fim], lista[i+1]
+
+    return i+1
+
+
+#Gera o ID
+#def gerar_id(nome):
+#    soma = 0
+
+#    for letra in nome:
+#        soma = soma + ord(letra)
+
+#    codigo = soma % 10000
+#    prefixo = nome[:3].upper()
+
+#    return prefixo + "-" + str(codigo)
+
+def gerar_id():
+  global contador_id
+
+  contador_id += 1
+
+  return contador_id
+
+#exibição das ocorrencias
+def exibir_ocorrencia(oc):
+    print(f"  ID        : {oc['id']}")
+    print(f"  Nome      : {oc['nome']}")
+    print(f"  Tipo      : {oc['tipo']}")
+    print(f"  Descrição : {oc['descricao']}")
+    print(f"  Prioridade: {oc['prioridade']}")
+    print(f"  Chegada   : {oc['chegada']}")
+    print(f"  Status    : {oc['status']}")
+    print()
+
+# !!!! FUNCIONALIDADES DO MENU !!!!
+
+#REQ 1 Cadastrar ocorrência
+def cadastrar_ocorrencia():
+    global contador_chegada
+    print("\n CADASTRAR OCORRÊNCIA ")
+
+    nome      = input("Nome do solicitante : ")
+#    id_oc     = gerar_id(nome)
+    id_oc = gerar_id()
+    tipo      = input("Tipo da ocorrência  : ")
+    descricao = input("Descrição           : ")
+
+    while True:
+        prioridade = input("Prioridade (1 a 5)  : ")
+        if prioridade in ["1", "2", "3", "4", "5"]:
+            break
+        print("  ! Digite um número entre 1 e 5.")
+
+    contador_chegada += 1
+
+    ocorrencia = {
+        "id"       : id_oc,
+        "nome"     : nome,
+        "tipo"     : tipo,
+        "descricao": descricao,
+        "prioridade": int(prioridade),
+        "chegada"  : contador_chegada,
+        "status"   : "Aberto"
+    }
+
+    #insere na LISTA GERAL
+    lista_ocorrencias.append(ocorrencia)
+
+    #insere na FILA de chegada
+    fila_enqueue(ocorrencia)
+
+    #insere na HASH
+    hash_inserir(ocorrencia)
+
+    #registrA na PILHA de historico
+    pilha_push(f"Cadastro da ocorrência {id_oc} ({nome})")
+
+    #insere na arvore
+    global raizArvore
+    raizArvore = inserir(raizArvore, ocorrencia)
+    print("arvore")
+    printa_arvore(raizArvore)
+
+    print(f"\n✓ Ocorrência cadastrada com ID: {id_oc}")
+
+#REQ 2 Listar todas as ocorrências
+def listar_ocorrencias():
+    print("\nLISTAR OCORRÊNCIAS")
+    if not lista_ocorrencias:
+        print(" \nNenhuma ocorrência cadastrada.")
+        return
+
+    print(f"  Total: {len(lista_ocorrencias)} ocorrência(s)\n")
+    for oc in lista_ocorrencias:
+        exibir_ocorrencia(oc)
+
+#REQ 3 Atender pela ordem de chegada
+def atender_fila():
+    print("\n ATENDER PELA ORDEM DE CHEGADA")
+    if fila_vazia():
+        print("\n Nenhuma ocorrência aguardando na fila.")
+        return
+
+    ocorrencia = fila_dequeue()
+    ocorrencia["status"] = "Atendido"
+
+    print("  Atendendo a ocorrência mais antiga:")
+    exibir_ocorrencia(ocorrencia)
+
+    # registra na pilha
+    pilha_push(f"Atendimento (fila) da ocorrência {ocorrencia['id']} ({ocorrencia['nome']})")
+
+
+
+#REQ 4 Buscar por nome ou tipo
+def buscar_hash():
+    print("\n BUSCAR POR NOME OU TIPO")
+    print("  1 - Buscar por nome")
+    print("  2 - Buscar por tipo")
+    opcao = input("  Escolha: ")
+    #depois tem como adicionar buscar por prioridade também
+
+    if opcao == "1":
+        termo     = input("  Nome: ")
+        resultado = hash_buscar_nome(termo)
+        rotulo    = f"nome '{termo}'"
+    elif opcao == "2":
+        termo     = input("  Tipo: ")
+        resultado = hash_buscar_tipo(termo)
+        rotulo    = f"tipo '{termo}'"
+    else:
+        print("  Opção inválida.")
+        return
+
+    if not resultado:
+        print(f"\n  Nenhuma ocorrência encontrada para {rotulo}.")
+        return
+
+    print(f"\n  {len(resultado)} ocorrência(s) encontrada(s) para {rotulo}:\n")
+    for oc in resultado:
+        exibir_ocorrencia(oc)
+
+#REQ 5  Ordenar ocorrências !!!!!!!!!!!!!!!!  TEM QUE FAZER !!!!!!!!!!!!!!
+def ordenar_ocorrencias():
+    print("\n ORDENAR OCCORENCIASA")
+    if not lista_ocorrencias:
+        print("  Nenhuma ocorrência para ordenar.")
+        return
+    print("Ordenação por:")
+    print("  1 - ID")
+    print("  2 - prioridade")
+
+    opcao = input("escolha: ")
+    if opcao == "1":
+        listaOrdenada = ordenacao(lista_ocorrencias, "id")
+        for oc in listaOrdenada:
+            exibir_ocorrencia(oc)
+    elif opcao == "2":
+        listaOrdenada = ordenacao(lista_ocorrencias, "prioridade")
+        for oc in listaOrdenada:
+            exibir_ocorrencia(oc)
+
+#REQ 6 VER HISTORICO DE AÇÕES
+def ver_historico():
+    print("\n HISTÓRICO DE AÇÕES")
+    if not pilha_historico:
+        print("  Nenhuma ação registrada.")
+        return
+
+    print(f"  {len(pilha_historico)} ação(ões) registrada(s) — mais recente no topo:\n")
+    for i, acao in enumerate(reversed(pilha_historico)):
+        print(f"  [{len(pilha_historico) - i}] {acao}")
+
+
+#REQ 7 DESFAZER AÇÃO
+def desfazer_acao():
+    print("\n DESFAZER ÚLTIMA AÇÃO")
+    acao = pilha_pop()
+    if acao is None:
+        print("  Nenhuma ação para desfazer.")
+        return
+    print(f"  Última ação removida do histórico:\n  → {acao}")
+    print("\n  (versão mínima: o registro foi removido da pilha.)")
+
+
+#REQ 8 BUSCA POR ID NA ARVORE
+def busca_id():
+    print("\n BUSCAR POR ID NA ÁRVORE")
+    if not lista_ocorrencias:
+        print("nenhuma ocorrência cadastrada.")
+        return
+    id_oc = int(input("id: "))
+    ocorrencia = buscar_id(raizArvore, id_oc)
+    exibir_ocorrencia(ocorrencia)
+
+#REQ 9 ATENDER MAIS URGENTE
+def atender_urgente():
+    print("\n ATENDER MAIS URGENTE")
+
+    listaOrdenada = ordenacao(lista_ocorrencias, "prioridade")
+
+    for ocorrencia in listaOrdenada:
+
+        if ocorrencia["status"] == "Aberto":
+
+            ocorrencia["status"] = "Atendido"
+
+            print("Ocorrência atendida:")
+            exibir_ocorrencia(ocorrencia)
+
+            pilha_push(f"atendimento da ocorrência {ocorrencia['id']} {ocorrencia['descricao']} do solicitante {ocorrencia['nome']})")
+
+            return
+
+    print("Nenhuma ocorrência pendente.")
+
+# ####### LOOP CONTINUO MENU #######
+while True:
+    print("\n===== MENU =====")
+    print("1 - Cadastrar ocorrência")
+    print("2 - Listar todas as ocorrências")
+    print("3 - Atender próxima pela fila (ordem de chegada)")
+    print("4 - Buscar por nome ou tipo   (hash table)")
+    print("5 - Ordenar ocorrências       (alg de ord)")
+    print("6 - Ver histórico de ações    (pilha)")
+    print("7 - Desfazer última ação      (pop da pilha)")
+    print("8 - Buscar ocorrencia por ID  (AVL)")
+    print("9 - Atender mais urgente      ")
+    print("0 - Sair")
+
+    opcao = input("\n Escolha uma opção: ")
+
+    if   opcao == "1": cadastrar_ocorrencia()
+    elif opcao == "2": listar_ocorrencias()
+    elif opcao == "3": atender_fila()
+    elif opcao == "4": buscar_hash()
+    elif opcao == "5": ordenar_ocorrencias()
+    elif opcao == "6": ver_historico()
+    elif opcao == "7": desfazer_acao()
+    elif opcao == "8": busca_id()
+    elif opcao == "9": atender_urgente()
+    elif opcao == "0":
+        print("Saindo...")
+        break
+    else:
+        print("Opção inválida.")
